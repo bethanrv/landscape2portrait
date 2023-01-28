@@ -18,6 +18,27 @@
 		<p> Add Blurred Refletions to a Landscape Image </p>
 	</header>
 
+	<i onclick="toggleQualitySettings()" style="position: fixed; top: 3vh; left: 92vw; color: #4f4f4f; cursor:pointer; " class="material-icons">settings</i>
+
+	
+	<floatingContainer id='qualitySettingsArea' style="display: none; position: fixed; top: 33vh; left: 20vw; width: 60vw; height: 33vh; background:white; flex-direction: column; border: 1px solid black; padding: 2vh;">
+
+		<div style="width: 100%; display: flex; justify-content: flex-end;">
+
+			<i onclick="toggleQualitySettings()" style="color: #4f4f4f; cursor:pointer; " class="material-icons">close</i>
+
+		</div>
+
+		<div style="width:100%; display:flex; justify-content: center; align-items:center; flex-direction: column; ">
+			<p style="text-decoration: underline;"> Quality </p>
+			<qualitySetting onclick='selectQualitySetting(this)'> Min </qualitySetting >
+			<qualitySetting onclick='selectQualitySetting(this)'> Low </qualitySetting>
+			<qualitySetting class='selectedTxt' onclick='selectQualitySetting(this)'> Medium </qualitySetting>
+			<qualitySetting onclick='selectQualitySetting(this)'> High </qualitySetting>
+			<qualitySetting onclick='selectQualitySetting(this)'> Max </qualitySetting>
+		</div>
+	</floatingContainer>
+
 	<demo>
 		<column>
 			<img style="max-width: 33vw; max-height: 33vh; height: fit-content; border: 2px solid black; border-radius: 5px; margin-left: 0vw;" src="https://i.postimg.cc/KzHCnR7P/doggers.jpg" alt="example landscape image">
@@ -159,6 +180,7 @@
 
 	}
 	let imageCount = 0
+	let initialBlurKernal = 100
 	const loadInputImage = (file) => {
 		var canvas = document.getElementById('canvas')
 		var ctx = canvas.getContext('2d')
@@ -195,9 +217,9 @@
 		    ctx2.putImageData(mainImgSlice, 0, img.height)
 
 		    
-		    let rowsToSlice = 250
-		    let maxBlur = 250
-			if (img.height < 250){
+		    let rowsToSlice = initialBlurKernal
+		    let maxBlur = initialBlurKernal
+			if (img.height < initialBlurKernal){
 		    	maxBlur = img.height/2
 		    	rowsToSlice = img.height/2
 		    }
@@ -302,6 +324,42 @@
 			historyImg.classList.remove('selected')
 		})
 
+	}
+
+	const selectQualitySetting = (qualitySetting) => {
+		deselectQualitySetttings()
+		qualitySetting.classList.add('selectedTxt')
+		console.log(qualitySetting.innerHTML)
+		setBlurKernal(qualitySetting.innerHTML.trim())
+	}
+
+	const setBlurKernal = (setting) => {
+		if(setting == "Min") {
+			initialBlurKernal = 10
+		}else if(setting == "Low") {
+			initialBlurKernal = 50
+		}else if(setting == "Medium") {
+			initialBlurKernal = 100
+		}else if(setting == "High") {
+			initialBlurKernal = 500
+		}else if(setting == "Max") {
+			initialBlurKernal = 1000
+		}
+	}
+
+	const deselectQualitySetttings = () => {
+		let qualitySettings = document.getElementsByTagName("qualitySetting")
+		Array.from(qualitySettings).forEach((setting)=> {
+			setting.classList.remove('selectedTxt')
+		})
+	}
+	const toggleQualitySettings = () => {
+		let qualityArea = document.getElementById('qualitySettingsArea')
+		if(qualityArea.style.display == 'none') {
+			fadeIn(qualityArea,'flex')
+		}else{
+			fadeOut(qualityArea)
+		}
 	}
 
 	Filters = {};
@@ -526,6 +584,15 @@
 	.selected {
 		border: 3px solid #2ed999;
 		border-radius: 10px;
+	}
+	qualitySetting{
+		cursor: pointer;
+	}
+	qualitySetting:hover{
+		color: dodgerblue;
+	}
+	qualitySetting.selectedTxt{
+		color:dodgerblue;
 	}
 
 </style>
