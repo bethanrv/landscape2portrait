@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- Font -->
+	 <link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Neucha&family=Open+Sans:wght@300&display=swap" rel="stylesheet">
+	<!-- Icons -->
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+	<title>landscape 2 portrait</title>
+</head>
+<body>
+	<header>
+		<h1> Landscape to Portrait </h1>
+		<p> Add Blurred Refletions to a Landscape Image </p>
+	</header>
+
+	<demo>
+		<column>
+			<img style="max-width: 33vw; max-height: 33vh; height: fit-content; border: 2px solid black; border-radius: 5px; margin-left: 0vw;" src="https://i.postimg.cc/KzHCnR7P/doggers.jpg" alt="example landscape image">
+		</column>
+		<column style="width: 10vw; margin-left: 0vw;">
+			<img style="width:6vw;" src="https://i.postimg.cc/brgJp7KV/blue-arrow-png-36989.png" alt="arrow image">
+		</column>
+		<column>
+			<img style="max-width: 33vw; max-height: 33vh;" src="https://iili.io/H04Be14.png" alt="blurred example image">
+		</column>
+	</demo>
+
+	<div style="display: flex; width: 100%; justify-content: center; margin-top: 4vh; margin-bottom: 4vh;">
+		<dropzone ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" onclick="openFileBrowser();" ondragleave="dragLeaveHandler(event);" onmouseover="fileBroswerHover()" onmouseleave="fileBroswerHoverLeave()" >
+			<p> Click to Upload Image </p>
+			<i class="material-icons"> add_circle </i>
+		</dropzone>
+	</div>
+	<input id="fileInput" style="display:none;" oninput="initializeImageConversion(this.files[0])" type="file" name="image" accept="image/*">
+	<resultArea>	
+		<h2 id="resultAreaHeader" style="font-weight: 300; text-decoration: underline; display:none;"> Processing Image </h2>
+		
+		<p id="resultSizeWarning" style="color: #ff4564; font-size: 12px; display:none;"> * Large photos may take up to a minute to process </p>
+		<canvas id="canvas"></canvas>
+		<canvas id="canvas2"></canvas>
+
+		<a Download id="downloadBtn" style="background: #2ed999; padding:1vh; color: white; display:none; align-items: center; cursor: pointer; margin-top: 2vh; margin-bottom:2vh; text-decoration:none;">
+			Download
+			<i style="padding-left: 1vh;" class="material-icons"> file_download </i>
+		</a>
+	</resultArea>
+	<div style="width:100%; display: flex; justify-content:center">
+		<h2 id="historyHeader" style="font-weight: 300; text-decoration: underline; display:none;"> History </h2>
+	</div>
+	<conversionList>
+	</conversionList>
+	<div style="width:100%; display:flex; justify-content:center;">
+		<a Download id="downloadSelectedBtn" style="background: #2ed999; padding:1vh; color: white; display:none; align-items: center; cursor: pointer; margin-top: 2vh; margin-bottom:2vh; text-decoration:none;">
+			Download Selected
+			<i style="padding-left: 1vh;" class="material-icons"> file_download </i>
+		</a>
+	</div>
+</body>
+</html>
+<script type="text/javascript">
+	const onFiltersReady = () => {
+		console.log('Filters Loaded')
+	}
+	const openFileBrowser = () => {
+		document.getElementById('fileInput').click()
+	}	
+	const isImage = (fileName) => {
+		var imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'svg']
+		var fileExtension = fileName.split('.').pop()
+		return imageExtensions.indexOf(fileExtension) > -1
+	}
+	const fileBroswerHover = () => {
+		let dropzone = 	document.getElementsByTagName('dropzone')[0]
+		dropzone.style.background = '#66bfff'
+		dropzone.style.color = 'white'
+	}
+	const fileBroswerHoverLeave = () => {
+		let dropzone = 	document.getElementsByTagName('dropzone')[0]
+		dropzone.style.background = 'white'
+		dropzone.style.color = 'black'
+	}
+	const dropHandler = (event) => {
+		event.preventDefault()
+		if (event.dataTransfer.items) {
+			Array.from(event.dataTransfer.items).forEach((item, i) => {
+		      if (item.kind === 'file') {
+		        const file = item.getAsFile();
+		        if (isImage(file.name)){
+		        	initializeImageConversion(file)
+		        }else{console.log('not an image')}
+		      }else{
+		      	console.log('not an image')
+		      }
+		    })
+		}else{
+			console.log(event.dataTransfer.files)
+			Array.from(event.dataTransfer.files).forEach((file, i) => {
+				if(isImage(file.name)){
+					initializeImageConversion(file)
+				}else{
+					console.log('not an image')
+				}
+			})
+		}
+		let dropzone = 	document.getElementsByTagName('dropzone')[0]
+		dropzone.style.background = 'white'
+		dropzone.style.color = 'black'
+		dropzone.children[0].innerHTML = "Click to Upload Image"
+	}
+
+	let loadEffect;
+	const initializeImageConversion = (file) => {
+		console.log('converting...')
+		loadEffect = setInterval(() => {
+    		var currHTML = document.getElementById('resultAreaHeader').innerHTML
+    		var dotCount = countCharInStr(currHTML, '.')
+    		if(dotCount < 3){
+    			document.getElementById('resultAreaHeader').innerHTML += '.'
+    		}
+    		else{
+    			document.getElementById('resultAreaHeader').innerHTML = "Processing Image"
+    		}
+    	}, 500)
+
+    	setTimeout(()=>{
+	    	//fadeOut(document.getElementsByTagName('dropzone')[0])
+	    	fadeOut(document.getElementsByTagName('demo')[0])
+    		fadeIn(document.getElementById('resultAreaHeader'), 'block')
+    		fadeIn(document.getElementById('resultSizeWarning'), 'block')
+    		document.getElementById('canvas2').width = 0
+    		document.getElementById('canvas2').height = 0
+		    fadeOut(document.getElementById('downloadBtn'))
+    	}, 10)
+    	setTimeout(()=>{
+    		loadInputImage(file)
+    	}, 2000)
+	}
+	const countCharInStr = (str, target) => {
+		return str.split(target).length - 1
+	}
+	const dragOverHandler = (event) => {
+		event.preventDefault()
+		let dropzone = 	document.getElementsByTagName('dropzone')[0]
+		dropzone.style.background = '#66bfff'
+		dropzone.style.color = 'white'
+		dropzone.children[0].innerHTML = "Drop File to Upload"
+	}
+	const dragLeaveHandler = (event) => {
+		event.preventDefault()
+		let dropzone = 	document.getElementsByTagName('dropzone')[0]
+		dropzone.style.background = 'white'
+		dropzone.style.color = 'black'
+		dropzone.children[0].innerHTML = "Click to Upload Image"
+
+	}
+	let imageCount = 0
+	const loadInputImage = (file) => {
+		var canvas = document.getElementById('canvas')
+		var ctx = canvas.getContext('2d')
+		var img = new Image()
+		img.src = URL.createObjectURL(file)
+		img.onload = function() {
+		    canvas.width = img.width
+		    canvas.height = img.height * 3
+		    ctx.drawImage(img, 0, img.height)
+
+		    // ctx.filter = 'blur(15px)'
+
+		    ctx.translate(img.width/2, img.height/2);
+		    ctx.scale(1, -1)
+		    ctx.drawImage(img, -1 * img.width/2, -1 * img.height/2)
+		    ctx.scale(1, -1)
+		    ctx.translate(-1*img.width/2,-1*img.height/2);
+
+		    //ctx.mask = 'linear-gradient(to top, black 10%, transparent 80%)'
+
+		    ctx.translate(img.width/2, (img.height*2) + (img.height/2));
+		    ctx.scale(1, -1)
+		    ctx.drawImage(img, -1 * img.width/2, -1 * img.height/2)
+		    ctx.scale(1, -1)
+		    ctx.translate(-1*img.width/2, -1 * (img.height*2) + (img.height/2));
+
+		    // copy to canvas 2
+		    let canvas2 = document.getElementById('canvas2')
+		    canvas2.width = canvas.width
+		    canvas2.height = canvas.height
+		    let ctx2 = canvas2.getContext('2d')
+
+		    let mainImgSlice = ctx.getImageData(0, img.height, img.width, img.height)
+		    ctx2.putImageData(mainImgSlice, 0, img.height)
+
+		    let maxBlur = img.height/4
+		    let rowsToSlice = img.height/4
+			if (maxBlur < 100){
+		    	maxBlur = img.height/2
+		    	rowsToSlice = img.height/2
+		    }
+
+		    let rowHeight = Math.floor(img.height/rowsToSlice)
+		    let currentRowY = 0
+		    let blurSize = maxBlur
+		    let blurStep = Math.floor(blurSize/rowsToSlice)
+
+		    blurSize -= blurStep
+
+		    while(currentRowY < img.height){
+		   		let imageSlice = ctx.getImageData(0,currentRowY, canvas.width, rowHeight)
+		   		let blurredSlice = Filters.gaussianBlur(imageSlice, blurSize)
+		   		ctx2.putImageData(blurredSlice, 0, currentRowY)
+		   		currentRowY += rowHeight
+		   		blurSize -= blurStep
+		    } 
+
+		    currentRowY = (img.height * 3) - rowHeight
+		    blurSize = maxBlur
+		    while(currentRowY >= (img.height * 2)-rowHeight) {
+		    	let imageSlice = ctx.getImageData(0, currentRowY, canvas.width, rowHeight)
+		    	let blurredSlice = Filters.gaussianBlur(imageSlice, blurSize)
+		    	ctx2.putImageData(blurredSlice, 0, currentRowY)
+		    	currentRowY -= rowHeight
+		    	blurSize -= blurStep
+		    }
+
+		    canvas.style.display = "none"
+		    canvas2.style.maxWidth = "100vw"
+		    canvas2.style.maxHeight = "100vh"
+
+		    fadeOut(document.getElementById('resultSizeWarning'))
+		    document.getElementById('resultAreaHeader').innerHTML = "Portrait Image"
+		    clearInterval(loadEffect)
+		    fadeIn(document.getElementById('downloadBtn'), 'flex')
+    		fadeIn(document.getElementById('historyHeader'), 'block')
+
+
+		    // copy image to conversion list
+		    let newImageHTML = document.createElement("canvas")
+		    imageCount++
+		    newImageHTML.id = "storedImage" + imageCount
+		    newImageHTML.width = canvas.width
+		    newImageHTML.height = canvas.height
+		    newImageHTML.classList.add("historyImg")
+		    newImageHTML.style.height = '20vh'
+		    newImageHTML.onclick = () => { selectImageFromHistory(newImageHTML)}
+		    document.getElementsByTagName('conversionList')[0].appendChild(newImageHTML)
+		    let newImageHTMLCtx = document.getElementById("storedImage" + imageCount).getContext('2d')
+		    newImageHTMLCtx.drawImage(canvas2, 0, 0)
+
+		    // set download btn link
+		    var imageURL = document.getElementById("canvas2").toDataURL("image/png").replace("image/png", "image/octet-stream");
+			document.getElementById("downloadBtn").href = imageURL
+			document.getElementById("downloadBtn").download = "PortraitImg" + imageCount + ".png"
+			var link = document.createElement('a');
+		}
+	}
+	const degreesToRadias = (degrees) => {
+		return degrees * Math.PI / 180
+	}
+	const fadeOut = (fadeTarget) => {
+        fadeTarget.style.opacity = 1;
+		var fadeEffect = setInterval(function () {
+	        if (fadeTarget.style.opacity > 0) {
+	            fadeTarget.style.opacity -= 0.01;
+	        } else {
+	            clearInterval(fadeEffect);
+	            fadeTarget.style.display = 'none'
+	        }
+	    }, 2);
+	}
+	const fadeIn = (fadeTarget, display) => {
+        fadeTarget.style.opacity = 0;
+        fadeTarget.style.display = display
+        var currOpacity = 0
+		var fadeInEffect = setInterval(function () {
+	        if (fadeTarget.style.opacity < 1) {
+	        	currOpacity += 0.01
+	            fadeTarget.style.opacity = currOpacity;
+	        } else {
+	            clearInterval(fadeInEffect);
+	        }
+	    }, 2);
+	}
+	const selectImageFromHistory = (historyImg) => {
+		deselectHistoryImages()
+		historyImg.classList.add('selected')
+		fadeIn(document.getElementById('downloadSelectedBtn'), 'flex')
+		// set download btn link
+	    var imageURL = historyImg.toDataURL("image/png").replace("image/png", "image/octet-stream");
+		document.getElementById("downloadSelectedBtn").href = imageURL
+		document.getElementById("downloadSelectedBtn").download = "PortraitImg" + imageCount + ".png"
+		var link = document.createElement('a');
+	}
+	const deselectHistoryImages = () => {
+		let historyImages = document.getElementsByTagName('conversionList')[0].children
+		Array.from(historyImages).forEach((historyImg)=>{
+			historyImg.classList.remove('selected')
+		})
+
+	}
+
+	Filters = {};
+
+	if (typeof Float32Array == 'undefined') {
+	  Filters.getFloat32Array =
+	  Filters.getUint8Array = function(len) {
+	    if (len.length) {
+	      return len.slice(0);
+	    }
+	    return new Array(len);
+	  };
+	} else {
+	  Filters.getFloat32Array = function(len) {
+	    return new Float32Array(len);
+	  };
+	  Filters.getUint8Array = function(len) {
+	    return new Uint8Array(len);
+	  };
+	}
+
+	Filters.tmpCanvas = document.createElement('canvas');
+  	Filters.tmpCtx = Filters.tmpCanvas.getContext('2d');
+
+  	Filters.createImageData = function(w, h) {
+	    return this.tmpCtx.createImageData(w, h);
+	};
+
+	Filters.createImageDataFloat32 = function(w, h) {
+	  return {width: w, height: h, data: this.getFloat32Array(w*h*4)};
+	};
+
+	Filters.identity = function(pixels, args) {
+	  var output = Filters.createImageData(pixels.width, pixels.height);
+	  var dst = output.data;
+	  var d = pixels.data;
+	  for (var i=0; i<d.length; i++) {
+	    dst[i] = d[i];
+	  }
+	  return output;
+	};
+
+	Filters.separableConvolve = function(pixels, horizWeights, vertWeights, opaque) {
+	  return this.horizontalConvolve(
+	    this.verticalConvolveFloat32(pixels, vertWeights, opaque),
+	    horizWeights, opaque
+	  );
+	};
+
+	Filters.horizontalConvolve = function(pixels, weightsVector, opaque) {
+	  var side = weightsVector.length;
+	  var halfSide = Math.floor(side/2);
+
+	  var src = pixels.data;
+	  var sw = pixels.width;
+	  var sh = pixels.height;
+
+	  var w = sw;
+	  var h = sh;
+	  var output = Filters.createImageData(w, h);
+	  var dst = output.data;
+
+	  var alphaFac = opaque ? 1 : 0;
+
+	  for (var y=0; y<h; y++) {
+	    for (var x=0; x<w; x++) {
+	      var sy = y;
+	      var sx = x;
+	      var dstOff = (y*w+x)*4;
+	      var r=0, g=0, b=0, a=0;
+	      for (var cx=0; cx<side; cx++) {
+	        var scy = sy;
+	        var scx = Math.min(sw-1, Math.max(0, sx + cx - halfSide));
+	        var srcOff = (scy*sw+scx)*4;
+	        var wt = weightsVector[cx];
+	        r += src[srcOff] * wt;
+	        g += src[srcOff+1] * wt;
+	        b += src[srcOff+2] * wt;
+	        a += src[srcOff+3] * wt;
+	      }
+	      dst[dstOff] = r;
+	      dst[dstOff+1] = g;
+	      dst[dstOff+2] = b;
+	      dst[dstOff+3] = a + alphaFac*(255-a);
+	    }
+	  }
+	  return output;
+	};
+
+	Filters.verticalConvolveFloat32 = function(pixels, weightsVector, opaque) {
+	  var side = weightsVector.length;
+	  var halfSide = Math.floor(side/2);
+
+	  var src = pixels.data;
+	  var sw = pixels.width;
+	  var sh = pixels.height;
+
+	  var w = sw;
+	  var h = sh;
+	  var output = Filters.createImageDataFloat32(w, h);
+	  var dst = output.data;
+
+	  var alphaFac = opaque ? 1 : 0;
+
+	  for (var y=0; y<h; y++) {
+	    for (var x=0; x<w; x++) {
+	      var sy = y;
+	      var sx = x;
+	      var dstOff = (y*w+x)*4;
+	      var r=0, g=0, b=0, a=0;
+	      for (var cy=0; cy<side; cy++) {
+	        var scy = Math.min(sh-1, Math.max(0, sy + cy - halfSide));
+	        var scx = sx;
+	        var srcOff = (scy*sw+scx)*4;
+	        var wt = weightsVector[cy];
+	        r += src[srcOff] * wt;
+	        g += src[srcOff+1] * wt;
+	        b += src[srcOff+2] * wt;
+	        a += src[srcOff+3] * wt;
+	      }
+	      dst[dstOff] = r;
+	      dst[dstOff+1] = g;
+	      dst[dstOff+2] = b;
+	      dst[dstOff+3] = a + alphaFac*(255-a);
+	    }
+	  }
+	  return output;
+	};
+
+
+	Filters.gaussianBlur = function(pixels, diameter) {
+	  diameter = Math.abs(diameter);
+	  if (diameter <= 1) return Filters.identity(pixels);
+	  var radius = diameter / 2;
+	  var len = Math.ceil(diameter) + (1 - (Math.ceil(diameter) % 2))
+	  var weights = this.getFloat32Array(len);
+	  var rho = (radius+0.5) / 3;
+	  var rhoSq = rho*rho;
+	  var gaussianFactor = 1 / Math.sqrt(2*Math.PI*rhoSq);
+	  var rhoFactor = -1 / (2*rho*rho)
+	  var wsum = 0;
+	  var middle = Math.floor(len/2);
+	  for (var i=0; i<len; i++) {
+	    var x = i-middle;
+	    var gx = gaussianFactor * Math.exp(x*x*rhoFactor);
+	    weights[i] = gx;
+	    wsum += gx;
+	  }
+	  for (var i=0; i<weights.length; i++) {
+	    weights[i] /= wsum;
+	  }
+	  return Filters.separableConvolve(pixels, weights, weights, false);
+	};
+
+</script>
+<!-- script src="./filters.js" async onload="onFiltersReady()"></script -->
+<style type="text/css">
+	*{
+		padding: 0;
+		margin: 0;
+		box-sizing: border-box;
+		font-family: 'Neucha', cursive;
+		font-family: 'Open Sans', sans-serif;
+	}
+	body{
+		margin-bottom: 4vh;
+	}
+	h1{
+		font-weight: 300;
+	}
+	header{
+		width: 100%;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		flex-direction: column;
+		margin-top: 4vh;
+		margin-bottom: 4vh;
+	}
+	demo{
+		width: 100vw;
+		display: flex;
+		justify-content: center;
+	}
+	demo column{
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+	dropzone{
+		border: 2px dotted dodgerblue;
+		display: flex;
+		justify-content: center;
+		width: 66%;
+		height: 33vh;
+		align-items: center;
+		flex-direction: column;
+	}
+	dropzone i{
+		color: dodgerblue;
+		padding: 2vh;
+	}
+	resultArea{
+		display: flex;
+		width: 100%;
+		justify-content: center;
+		align-items: center;
+		flex-direction: column;
+		margin-bottom: 5vh;
+	}
+	conversionList{
+		display: flex;
+		width: 100%;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+	.historyImg{
+		height: 25vh;
+		margin: 2vh;
+		cursor: pointer;
+	}
+	.selected {
+		border: 3px solid #2ed999;
+		border-radius: 10px;
+	}
+
+</style>
