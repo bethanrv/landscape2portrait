@@ -194,12 +194,14 @@
 		    let mainImgSlice = ctx.getImageData(0, img.height, img.width, img.height)
 		    ctx2.putImageData(mainImgSlice, 0, img.height)
 
-		    let maxBlur = img.height/4
-		    let rowsToSlice = img.height/4
-			if (maxBlur < 100){
+		    
+		    let rowsToSlice = 250
+		    let maxBlur = 250
+			if (img.height < 250){
 		    	maxBlur = img.height/2
 		    	rowsToSlice = img.height/2
 		    }
+		    
 
 		    let rowHeight = Math.floor(img.height/rowsToSlice)
 		    let currentRowY = 0
